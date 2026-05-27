@@ -546,7 +546,7 @@ body {
 `;
 
 // ── Component ────────────────────────────────────────────────────────────────
-export default function MediaVault() {
+export default function binge() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState("");
