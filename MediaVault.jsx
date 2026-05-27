@@ -780,7 +780,7 @@ export default function MediaVault() {
 
       {/* Header */}
       <header className="header">
-        <span className="wordmark">mediavault</span>
+        <span className="wordmark">binge</span>
         <button
           className="add-btn"
           onClick={() => {
