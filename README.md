@@ -54,6 +54,4 @@ Health check:
 
 ## Notes
 
-The deployed app serves the frontend and backend from the same Node service. Do not deploy `mediavault.db`; production data belongs in hosted Postgres.
-
-There is no login yet. Do not share the public URL widely until authentication is added.
+The deployed app serves the frontend and backend from the same Node service.
