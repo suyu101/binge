@@ -10,6 +10,8 @@ const HOST = process.env.HOST || "0.0.0.0";
 const DB_PATH = join(__dirname, "mediavault.db");
 const DIST_DIR = join(__dirname, "dist");
 const DATABASE_URL = process.env.DATABASE_URL || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 const CATEGORIES = new Set(["movie", "show", "book", "game"]);
 const STATUSES = new Set(["want", "ongoing", "not_completed", "consumed"]);
@@ -269,6 +271,28 @@ async function readJson(req) {
   }
 }
 
+function itemSummary(item) {
+  return [
+    `${item.category}: "${item.title}"`,
+    item.status && `status ${item.status}`,
+    item.genre && `genre ${item.genre}`,
+    item.rating && `rating ${item.rating}/10`,
+    item.progress && `progress ${item.progress}`,
+    item.source && `source ${item.source}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+function geminiText(data) {
+  return (
+    data?.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || "")
+      .join("")
+      .trim() || ""
+  );
+}
+
 function sendJson(res, status, data) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -339,6 +363,68 @@ async function handleApi(req, res) {
 
   if (url.pathname === "/api/items" && req.method === "GET") {
     sendJson(res, 200, await store.allItems());
+    return;
+  }
+
+  if (url.pathname === "/api/ai/recommend" && req.method === "POST") {
+    if (!GEMINI_API_KEY) {
+      const err = new Error("GEMINI_API_KEY is not configured on the server.");
+      err.status = 400;
+      throw err;
+    }
+
+    const body = await readJson(req);
+    const question = cleanText(body.question);
+    if (!question) {
+      const err = new Error("Ask a question first.");
+      err.status = 400;
+      throw err;
+    }
+
+    const items = await store.allItems();
+    const library = items.length
+      ? items.map((item) => `- ${itemSummary(item)}`).join("\n")
+      : "The vault is empty.";
+
+    const prompt = [
+      "You are a concise, fun media recommendation assistant.",
+      "Use only the user's vault data when it is relevant.",
+      "Give short bullet points and practical suggestions.",
+      "",
+      `Vault:\n${library}`,
+      "",
+      `Question:\n${question}`,
+    ].join("\n");
+
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": GEMINI_API_KEY,
+        },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 700,
+          },
+        }),
+      }
+    );
+
+    const data = await geminiRes.json().catch(() => null);
+    if (!geminiRes.ok) {
+      const err = new Error(data?.error?.message || "Gemini request failed.");
+      err.status = geminiRes.status;
+      throw err;
+    }
+
+    sendJson(res, 200, {
+      text: geminiText(data) || "No response text returned.",
+      model: GEMINI_MODEL,
+    });
     return;
   }
 

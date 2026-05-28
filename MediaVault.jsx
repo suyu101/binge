@@ -558,7 +558,6 @@ export default function binge() {
   const [form, setForm] = useState(defaultForm());
   const [hovered, setHovered] = useState(null);
   const [aiOpen, setAiOpen] = useState(false);
-  const [apiKey, setApiKey] = useState("");
   const [aiQ, setAiQ] = useState("");
   const [aiRes, setAiRes] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -725,46 +724,17 @@ export default function binge() {
   };
 
   const askAI = async () => {
-    if (!aiQ.trim() || !apiKey.trim()) return;
+    if (!aiQ.trim()) return;
     setAiLoading(true);
     setAiRes("");
-    const lib = items.length
-      ? items
-          .map(
-            (i) =>
-              `- ${CAT_LABEL[i.category]}: "${i.title}" [${i.status}${
-                i.genre ? `, ${i.genre}` : ""
-              }${
-                i.rating ? `, ${i.rating}/10` : ""
-              }${i.progress ? `, at ${i.progress}` : ""}]`
-          )
-          .join("\n")
-      : "empty library";
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const data = await apiJson("/api/ai/recommend", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-calls": "true",
-        },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 800,
-          system:
-            "Media recommendation assistant. Concise, personalized, brief. Bullet points. Be fun.",
-          messages: [
-            { role: "user", content: `Library:\n${lib}\n\n${aiQ}` },
-          ],
+          question: aiQ,
         }),
       });
-      const data = await res.json();
-      setAiRes(
-        data.content?.map((c) => c.text || "").join("") ||
-          data.error?.message ||
-          "–"
-      );
+      setAiRes(data.text || "-");
     } catch (e) {
       setAiRes("error: " + e.message);
     }
@@ -937,14 +907,6 @@ export default function binge() {
 
           {aiOpen && (
             <div className="ai-body">
-              <input
-                className="ai-key"
-                type="password"
-                placeholder="anthropic api key"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                autoComplete="off"
-              />
               <div className="ai-row">
                 <input
                   className="ai-input"

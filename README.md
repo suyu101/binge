@@ -34,6 +34,12 @@ Set a hosted Postgres connection string:
 DATABASE_URL=postgresql://...
 ```
 
+Set a Gemini key for the AI helper:
+
+```text
+GEMINI_API_KEY=...
+```
+
 Build command:
 
 ```text
