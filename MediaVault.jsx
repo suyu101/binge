@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 const STORAGE_KEY = "mv3-items";
 const CATS = ["movie", "show", "book", "game", "anime", "manga"];
 const CAT_LABEL = { movie: "film", show: "show", book: "book", game: "game", anime: "anime", manga: "manga" };
-const CAT_COLOR = { movie: "#ee9d64", show: "#67b8e0", book: "#7cd89a", game: "#c4a2f0" };
+const CAT_COLOR = { movie: "#ee9d64", show: "#67b8e0", book: "#7cd89a", game: "#c4a2f0", anime:"#ff7fb0", manga: "#b8b8c9" };
 const STATUSES = ["want", "ongoing", "not_completed", "consumed"];
 const PROGRESS_STATUSES = new Set(["ongoing", "not_completed"]);
 const STATUS_NEXT = {
